@@ -1,0 +1,3 @@
+[submodule "oko_db"]
+	path = oko_db
+	url = https://github.com/discenss/oko_db.git
