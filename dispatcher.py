@@ -1,15 +1,14 @@
 import os.path
 from multiprocessing.connection import Client
-from utils.general import LOGGER
-
 import schedule
 import time
-from utils.general import LOGGER
-from db import DB
+import logging
+from oko_db.db import DB
 import re
 from bot import send_bot_message
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+logging.basicConfig(filename='dispatcher.log', filemode='w', level=logging.DEBUG)
 
 days_untin_final = "У вас залишилося %s до завершення підписки\n"
 users_money = "У вас на рахунку %s\n"
@@ -65,7 +64,7 @@ def run_processing():
                                         try:
                                             os.mkdir(os.path.join(path,'frames'))
                                         except:
-                                            LOGGER.info(
+                                            logging.info(
                                                 str(datetime.now()[:-7]) + " Not connected to server " + ip_server)
 
                                     command = f"--source={os.path.join(path, file)} --project={os.path.join(path,'frames')} --est={name} --id={id_server} --device={device}"
@@ -75,7 +74,7 @@ def run_processing():
                                     conn.close()
                                     break
                                 except:
-                                    LOGGER.info(str(datetime.now()[:-7]) + " Not connected to server " + ip_server)
+                                    logging.info(str(datetime.now()[:-7]) + " Not connected to server " + ip_server)
                                     list_not_resp.append(ip_server)
                                     pass
                                     continue

@@ -1,7 +1,7 @@
 import telebot
 from telebot import types
 from datetime import datetime
-from db import DB
+from oko_db.db import DB
 from telebot.types import LabeledPrice, ShippingOption
 import time
 
