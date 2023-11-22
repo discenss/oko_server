@@ -16,7 +16,7 @@ def read_bot_keys(file_path):
 # Пример использования функции
 file_path = 'file.txt'  # Укажите путь к вашему файлу
 bot_id, payment_token = read_bot_keys(file_path)
-
+payment_token = "1661751239:TEST:8SSk-V1EZ-v75x-e1xx"
 bot = telebot.TeleBot(bot_id)
 
 report_for_date = 'Введіть дату у форматі РРРР-ММ-ДД (Наприклад 1991-08-24)'
@@ -58,7 +58,7 @@ def start(message):
     bot.send_message(message.from_user.id, "👋 Привіт! Я твій бот для роботы с відео спостереженням. \n"
                                            "/start - почати с початку\n"
                                            "Якщо ви тільки розпочали роботу с ботом то Вам необхідно мати 'Назву закладу' та 'Пароль'. Цю інформацію може отримати у власника закладу.\n "
-                                           "Наступний крок - підписатися не щоденний звіт"
+                                           "Наступний крок - підписатися не щоденний звіт\n"
                                            "/menu - показати меню ", reply_markup=markup)
 
 @bot.message_handler(commands=['menu'])
@@ -122,6 +122,11 @@ def handle_reply(message):
                 start_parameter="start_param",
                 invoice_payload="payload"
             )
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)  # создание новых кнопок
+            btn1 = types.KeyboardButton('Назад в меню')
+
+            markup.add(btn1)
+            bot.send_message(message.from_user.id, 'Або повернутися', reply_markup=markup)
         except ValueError:
             bot.reply_to(message, 'Не правильний формат числа')
             markup = types.ForceReply(selective=False)
@@ -134,11 +139,12 @@ def get_text_messages(message):
     if message.text == '👋 Почати':
         markup = types.ForceReply(selective=False)
         bot.send_message(message.from_user.id, est_name_and_password_for_subsc, reply_markup=markup)
+    elif message.text == 'Назад в меню':
+        show_main_menu(message)
 
     elif message.text == 'Профіль':
         db = DB()
         est_subs = db.get_est_list_for_tg_user(message.from_user.id)
-        messg = ''
         if est_subs is None:
             messg = 'Ви не підписані на жоден заклад\n'
         else:
@@ -159,8 +165,6 @@ def get_text_messages(message):
                          messg,
                          parse_mode='Markdown')
 
-
-
     elif message.text == 'Отримати звіт за дату':
         markup = types.ForceReply(selective=False)
         bot.send_message(message.from_user.id, report_for_date, reply_markup=markup)
@@ -177,26 +181,12 @@ def get_text_messages(message):
     elif message.text == "Поповнити рахунок":
         markup = types.ForceReply(selective=False)
         db = DB()
-        #if db.is_tg_user_owner(message.from_user.id):
-        bot.send_message(message.from_user.id, top_up_account,
-                         reply_markup=markup)
-       # else:
-        #    bot.send_message(message.from_user.id,
-        #                     "Вы не являетесь владельцем заведения",
-        #                     parse_mode='Markdown')
-        show_main_menu(message)
+        bot.send_message(message.from_user.id, top_up_account, reply_markup=markup)
+        #markup = types.ReplyKeyboardMarkup(resize_keyboard=True)  # создание новых кнопок
+        #btn1 = types.KeyboardButton('Назад в меню')
 
-    elif message.text == "Проверить состояние счёта":
-        db = DB()
-        money = db.get_money_for_tg_user(message.from_user.id)
-        if money is None:
-            bot.send_message(message.from_user.id,
-                             "Данные не найдены",
-                             parse_mode='Markdown')
-        else:
-            bot.send_message(message.from_user.id,
-                             f"На счету {money} гривен",
-                             parse_mode='Markdown')
+        #markup.add(btn1)
+        #bot.send_message(message.from_user.id, 'Або натисніть кнопку Назад в меню', reply_markup=markup)
 
 
 if __name__ == '__main__':
