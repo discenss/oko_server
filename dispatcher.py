@@ -1,19 +1,20 @@
 import os.path
 from multiprocessing.connection import Client
+from utils.general import LOGGER
+
 import schedule
 import time
-import logging
-from oko_db.db import DB
+from utils.general import LOGGER
+from db import DB
 import re
 from bot import send_bot_message
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-logging.basicConfig(filename='dispatcher.log', filemode='w', level=logging.DEBUG)
 
-days_untin_final = "У вас залишилося %s до завершення підписки\n"
+days_untin_final = "У вас %s днів до закінчення дії підписки\n"
 users_money = "У вас на рахунку %s\n"
-license_name_and_price = "Ви викостовуете для закладу %s підписку %s. Baм поповнити рахунок на %s грн"
-paying_for_license = "З Вашого рахунку списано %s за використання підписки %s для закладу %s. На на рахунку залишок %s"
+license_name_and_price = "Ви використовуете для закладу %s підписку %s. Вам необхідно поповнити рахунок на %s"
+paying_for_license = "З вашого рахунку знято %sгрн за використання підписки %s для закладу %s. Залишок на рахунку %s"
 def get_date_from_file(source_path):
     match = re.search(r'(\d{4}-\d{2}-\d{2})', source_path)
     if match:
@@ -58,32 +59,41 @@ def run_processing():
                                     return ''
 
                                 try:
+                                    ip_server, id_server, device = db.get_server_for_task(list_not_resp)
+                                    if not ip_server:
+                                        return ''
+
                                     address = (ip_server, 8443)
                                     conn = Client(address)
-                                    if os.path.isdir(os.path.join(path,'frames')) is False:
-                                        try:
-                                            os.mkdir(os.path.join(path,'frames'))
-                                        except:
-                                            logging.info(
-                                                str(datetime.now()[:-7]) + " Not connected to server " + ip_server)
 
-                                    command = f"--source={os.path.join(path, file)} --project={os.path.join(path,'frames')} --est={name} --id={id_server} --device={device}"
+                                    command = f"--source={os.path.join(path, file)} --est={name} --id={id_server} --device={device}"
                                     print(command)
+
                                     conn.send(command)
                                     conn.send('close')
                                     conn.close()
                                     break
-                                except:
-                                    logging.info(str(datetime.now()[:-7]) + " Not connected to server " + ip_server)
+                                except OSError as e:
+                                    LOGGER.error(
+                                        f"{datetime.now():%Y-%m-%d %H:%M:%S} - Failed to create directory: {e}")
+                                    break
+                                except ConnectionError as e:
+                                    LOGGER.error(
+                                        f"{datetime.now():%Y-%m-%d %H:%M:%S} - Not connected to server {ip_server}: {e}")
                                     list_not_resp.append(ip_server)
-                                    pass
-                                    continue
+                                    break
+                                except Exception as e:
+                                    LOGGER.error(
+                                        f"{datetime.now():%Y-%m-%d %H:%M:%S} - An unexpected error occurred: {e}")
+                                    list_not_resp.append(ip_server)
+                                    break
 
                         except:
                             pass
 
     else:
         return None
+
 def license_check():
     db = DB()
     rows = db.get_full_est_list()
@@ -97,7 +107,7 @@ def license_check():
         if ( days_difference < 7 and days_difference >= 0 and lic_name == "Test"):
             result_string = days_untin_final % (days_difference)
             if (tg_user_money == 0):
-                send_bot_message(result_string + " У вас на рахунку 0 грн. Тариф базовий буде призначений автоматично. Якщо треба змінити, тоді звертайтесь до оператора", tg_id)
+                send_bot_message(result_string + " У вас на счету 0 грн. Пополните счет и обратитесь к оператору для согласования тарифа", tg_id)
 
         elif ( days_difference < 7 and days_difference > 0 and lic_name !="Test"):
             money = db.get_money_for_tg_user(tg_id)
