@@ -1,15 +1,15 @@
 import os.path
 from multiprocessing.connection import Client
-from utils.general import LOGGER
 
 import schedule
 import time
-from utils.general import LOGGER
-from db import DB
+from oko_db.db import DB
 import re
 from bot import send_bot_message
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+import logging
+logging.basicConfig(filename='db.log', filemode='w', level=logging.DEBUG)
 
 days_untin_final = "У вас %s днів до закінчення дії підписки\n"
 users_money = "У вас на рахунку %s\n"
