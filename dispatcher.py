@@ -33,6 +33,10 @@ def run_processing():
     list_not_resp = []
     for i in range(len(rows)):
         id, name, adress, passw, license_id, owner_id, report_type, path, date = rows[i]
+        if (date - datetime.now().date()).days < 0:
+            logging.error(
+                f"{datetime.now():%Y-%m-%d %H:%M:%S} - Failed to create directory: {e}")
+            continue
         if path!= None and os.path.isdir(path):
             for file in os.listdir(path):
                 if file.endswith('.mp4') and get_date_from_file(file):
@@ -42,10 +46,9 @@ def run_processing():
                         days_difference = (datetime.now().date() - date_string).days
                         if days_difference > 2:
                             continue
+
                         date = str(date_string)
-                        # Формируем запрос на выборку данных из таблицы по дате
                         query = f"SELECT * FROM REPORT WHERE REALDATE = '{date}' AND ESTABLISHMENT_ID = {id}"
-                        # Выполняем запрос и получаем результат
                         db.cur.execute(query)
 
                         try:
@@ -74,16 +77,16 @@ def run_processing():
                                     conn.close()
                                     break
                                 except OSError as e:
-                                    LOGGER.error(
+                                    logging.error(
                                         f"{datetime.now():%Y-%m-%d %H:%M:%S} - Failed to create directory: {e}")
                                     break
                                 except ConnectionError as e:
-                                    LOGGER.error(
+                                    logging.error(
                                         f"{datetime.now():%Y-%m-%d %H:%M:%S} - Not connected to server {ip_server}: {e}")
                                     list_not_resp.append(ip_server)
                                     break
                                 except Exception as e:
-                                    LOGGER.error(
+                                    logging.error(
                                         f"{datetime.now():%Y-%m-%d %H:%M:%S} - An unexpected error occurred: {e}")
                                     list_not_resp.append(ip_server)
                                     break
@@ -107,7 +110,8 @@ def license_check():
         if ( days_difference < 7 and days_difference >= 0 and lic_name == "Test"):
             result_string = days_untin_final % (days_difference)
             if (tg_user_money == 0):
-                send_bot_message(result_string + " У вас на счету 0 грн. Пополните счет и обратитесь к оператору для согласования тарифа", tg_id)
+                send_bot_message(result_string + " У вас на рахунку 0 грн. Поповніть рахунок та зверніться до оператора щоб узгодити тип підписка. Підписка Basic буде встановлена автоматично", tg_id)
+
 
         elif ( days_difference < 7 and days_difference > 0 and lic_name !="Test"):
             money = db.get_money_for_tg_user(tg_id)
@@ -117,6 +121,16 @@ def license_check():
                 send_bot_message(result_string, tg_id)
 
         elif (days_difference <= 0 and lic_name != "Test"):
+            if (tg_user_money >= lic_price ):
+                db.addmomey_for_tg_user(tg_id, lic_price * -1)
+                result_string = paying_for_license %(lic_price, lic_name, name, db.get_money_for_tg_user(tg_id))
+                today = datetime.today()
+                one_month_later = today + relativedelta(months=1)
+                db.db_set_date_license_expired(one_month_later.date(), id)
+                send_bot_message(result_string, tg_id)
+
+        elif (days_difference <= 0 and lic_name == "Test"):
+            lic_name, lic_price = db.get_license_name_and_price(1)
             if (tg_user_money >= lic_price ):
                 db.addmomey_for_tg_user(tg_id, lic_price * -1)
                 result_string = paying_for_license %(lic_price, lic_name, name, db.get_money_for_tg_user(tg_id))
