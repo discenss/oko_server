@@ -15,6 +15,7 @@ days_untin_final = "У вас %s днів до закінчення дії пі�
 users_money = "У вас на рахунку %s\n"
 license_name_and_price = "Ви використовуете для закладу %s підписку %s. Вам необхідно поповнити рахунок на %s"
 paying_for_license = "З вашого рахунку знято %sгрн за використання підписки %s для закладу %s. Залишок на рахунку %s"
+
 def get_date_from_file(source_path):
     match = re.search(r'(\d{4}-\d{2}-\d{2})', source_path)
     if match:
@@ -35,7 +36,7 @@ def run_processing():
         id, name, adress, passw, license_id, owner_id, report_type, path, date = rows[i]
         if (date - datetime.now().date()).days < 0:
             logging.error(
-                f"{datetime.now():%Y-%m-%d %H:%M:%S} - Failed to create directory: {e}")
+                f" Subscription expired for {name}")
             continue
         if path!= None and os.path.isdir(path):
             for file in os.listdir(path):
@@ -146,7 +147,7 @@ schedule.every().day.at("03:00").do(license_check)
 
 def main():
     #license_check()
-    run_processing()
+    #run_processing()
     while True:
         schedule.run_pending()
         time.sleep(1)
