@@ -39,14 +39,30 @@ def run_processing():
                 f" Subscription expired for {name}")
             continue
         if path!= None and os.path.isdir(path):
+
             for file in os.listdir(path):
                 if file.endswith('.mp4') and get_date_from_file(file):
                         #and os.path.isfile(os.path.join(path, file)[:-3]+'json'):
                     date_string = get_date_from_file(file)
                     if date_string:
                         days_difference = (datetime.now().date() - date_string).days
-                        if days_difference > 2:
+                        if days_difference > 14 and days_difference > 3:
+                            try:
+                                os.remove(os.path.join(path, file))
+                                if db.get_report_type() != "none":
+                                    os.remove(os.path.join(path, file)[:-3] + 'json')
+                            except Exception as e:
+                                logging.error(
+                                    f"{datetime.now():%Y-%m-%d %H:%M:%S} - An error occurred with file deleting: {e}")
+                                continue
+
                             continue
+
+                        if db.get_report_type() != "none":
+                            if os.path.isfile(os.path.join(path, file)[:-3] + 'json') is False:
+                                logging.error(
+                                    f"{datetime.now():%Y-%m-%d %H:%M:%S} - Not found JSON file: {os.path.join(path, file)[:-3] + 'json'}")
+                                continue
 
                         date = str(date_string)
                         query = f"SELECT * FROM REPORT WHERE REALDATE = '{date}' AND ESTABLISHMENT_ID = {id}"
@@ -72,7 +88,8 @@ def run_processing():
 
                                     command = f"--source={os.path.join(path, file)} --est={name} --id={id_server} --device={device}"
                                     print(command)
-
+                                    logging.info(
+                                        f"{datetime.now():%Y-%m-%d %H:%M:%S} - Failed to create directory: {e}")
                                     conn.send(command)
                                     conn.send('close')
                                     conn.close()
