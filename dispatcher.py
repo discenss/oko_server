@@ -49,8 +49,10 @@ def run_processing():
                         if days_difference > 14 and days_difference > 3:
                             try:
                                 os.remove(os.path.join(path, file))
-                                if db.get_report_type() != "none":
+                                os.remove(os.path.join(path, file)[:-3] + 'xspf')
+                                if db.get_report_type(name) != "none":
                                     os.remove(os.path.join(path, file)[:-3] + 'json')
+
                             except Exception as e:
                                 logging.error(
                                     f"{datetime.now():%Y-%m-%d %H:%M:%S} - An error occurred with file deleting: {e}")
@@ -58,7 +60,7 @@ def run_processing():
 
                             continue
 
-                        if db.get_report_type() != "none":
+                        if db.get_report_type(name) != "none":
                             if os.path.isfile(os.path.join(path, file)[:-3] + 'json') is False:
                                 logging.error(
                                     f"{datetime.now():%Y-%m-%d %H:%M:%S} - Not found JSON file: {os.path.join(path, file)[:-3] + 'json'}")
@@ -89,7 +91,7 @@ def run_processing():
                                     command = f"--source={os.path.join(path, file)} --est={name} --id={id_server} --device={device}"
                                     print(command)
                                     logging.info(
-                                        f"{datetime.now():%Y-%m-%d %H:%M:%S} - Failed to create directory: {e}")
+                                        f"{datetime.now():%Y-%m-%d %H:%M:%S} STARTED {command}")
                                     conn.send(command)
                                     conn.send('close')
                                     conn.close()
