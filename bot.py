@@ -16,7 +16,6 @@ def read_bot_keys(file_path):
 # Пример использования функции
 file_path = 'file.txt'  # Укажите путь к вашему файлу
 bot_id, payment_token = read_bot_keys(file_path)
-payment_token = "1661751239:TEST:8SSk-V1EZ-v75x-e1xx"
 bot = telebot.TeleBot(bot_id)
 
 report_for_date = 'Введіть дату у форматі РРРР-ММ-ДД (Наприклад 1991-08-24)'
@@ -35,7 +34,7 @@ def process_pre_checkout(query):
 def handle_successful_payment(message):
     db = DB()
     db.addmomey_for_tg_user(message.from_user.id, message.successful_payment.total_amount / 100)
-    bot.reply_to(message, "Вы успешно пополнили счёт. Баланс %s" % db.get_money_for_tg_user(message.from_user.id))
+    bot.reply_to(message, "Ви успішно поповнили рахунок. Баланс %s" % db.get_money_for_tg_user(message.from_user.id))
     show_main_menu(message)
 
 def show_main_menu(message):
