@@ -46,7 +46,7 @@ def run_processing():
                     date_string = get_date_from_file(file)
                     if date_string:
                         days_difference = (datetime.now().date() - date_string).days
-                        if days_difference > 14 and days_difference > 3:
+                        if days_difference > 14:
                             try:
                                 os.remove(os.path.join(path, file))
                                 os.remove(os.path.join(path, file)[:-3] + 'xspf')
@@ -58,6 +58,9 @@ def run_processing():
                                     f"{datetime.now():%Y-%m-%d %H:%M:%S} - An error occurred with file deleting: {e}")
                                 continue
 
+                            continue
+                            
+                        if days_difference > 3:
                             continue
 
                         if db.get_report_type(name) != "none":
