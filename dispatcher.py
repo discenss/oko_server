@@ -59,7 +59,7 @@ def run_processing():
                                 continue
 
                             continue
-                            
+
                         if days_difference > 3:
                             continue
 
@@ -130,10 +130,11 @@ def license_check():
         lic_name, lic_price = db.get_license_name_and_price(license_id)
         tg_id = db.get_telegram_id(owner_id)
         tg_user_money = db.get_money_for_tg_user(tg_id)
-        if ( days_difference < 7 and days_difference >= 0 and lic_name == "Test"):
+        if ( days_difference < 1 and days_difference >= 0 and lic_name == "Test"):
             result_string = days_untin_final % (days_difference)
             if (tg_user_money == 0):
-                send_bot_message(result_string + " У вас на рахунку 0 грн. Поповніть рахунок та зверніться до оператора щоб узгодити тип підписка. Підписка Basic буде встановлена автоматично", tg_id)
+                send_bot_message(result_string + " У вас на рахунку 0 грн. Поповніть рахунок та зверніться до оператора щоб узгодити тип підписки. ", tg_id)
+                logging.info(f"{datetime.now():%Y-%m-%d %H:%M:%S} - Закончен тестовый период для заведения {name} и telegram id {tg_id}")
 
 
         elif ( days_difference < 7 and days_difference > 0 and lic_name !="Test"):
@@ -142,6 +143,8 @@ def license_check():
                 result_string = days_untin_final % (days_difference)
                 result_string = result_string + users_money % (money) + license_name_and_price %(name, lic_name, lic_price - money)
                 send_bot_message(result_string, tg_id)
+                logging.info(
+                    f"{datetime.now():%Y-%m-%d %H:%M:%S} - Заканчивается подписка для заведения {name} и telegram id {tg_id}. Сумма {lic_price}")
 
         elif (days_difference <= 0 and lic_name != "Test"):
             if (tg_user_money >= lic_price ):
@@ -151,16 +154,22 @@ def license_check():
                 one_month_later = today + relativedelta(months=1)
                 db.db_set_date_license_expired(one_month_later.date(), id)
                 send_bot_message(result_string, tg_id)
+                logging.info(
+                    f"{datetime.now():%Y-%m-%d %H:%M:%S} - Снята оплата для заведения {name} и telegram id {tg_id}. Сумма {lic_price}")
+            else:
+                logging.info(
+                    f"{datetime.now():%Y-%m-%d %H:%M:%S} - Недостаточно денег для оплаты подписки для заведения '{name}' и telegram id '{tg_id}'. Сумма '{lic_price}'")
 
-        elif (days_difference <= 0 and lic_name == "Test"):
-            lic_name, lic_price = db.get_license_name_and_price(1)
-            if (tg_user_money >= lic_price ):
-                db.addmomey_for_tg_user(tg_id, lic_price * -1)
-                result_string = paying_for_license %(lic_price, lic_name, name, db.get_money_for_tg_user(tg_id))
-                today = datetime.today()
-                one_month_later = today + relativedelta(months=1)
-                db.db_set_date_license_expired(one_month_later.date(), id)
-                send_bot_message(result_string, tg_id)
+
+        #elif (days_difference <= 0 and lic_name == "Test"):
+        #    lic_name, lic_price = db.get_license_name_and_price(1)
+        #    if (tg_user_money >= lic_price ):
+        #        db.addmomey_for_tg_user(tg_id, lic_price * -1)
+        #        result_string = paying_for_license %(lic_price, lic_name, name, db.get_money_for_tg_user(tg_id))
+        #        today = datetime.today()
+        #        one_month_later = today + relativedelta(months=1)
+        #        db.db_set_date_license_expired(one_month_later.date(), id)
+        #        send_bot_message(result_string, tg_id)
 
 
 # Планирование задачи на выполнение каждый день в определенное время
