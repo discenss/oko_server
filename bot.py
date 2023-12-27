@@ -4,7 +4,8 @@ from datetime import datetime
 from oko_db.db import DB
 from telebot.types import LabeledPrice, ShippingOption
 import time
-
+import logging
+logging.basicConfig(filename='bot.log', filemode='w', level=logging.DEBUG)
 
 def read_bot_keys(file_path):
     with open(file_path, 'r') as file:
@@ -35,6 +36,9 @@ def handle_successful_payment(message):
     db = DB()
     db.addmomey_for_tg_user(message.from_user.id, message.successful_payment.total_amount / 100)
     bot.reply_to(message, "Ви успішно поповнили рахунок. Баланс %s" % db.get_money_for_tg_user(message.from_user.id))
+    logging.info(
+        f"{datetime.now():%Y-%m-%d %H:%M:%S} Счёт успешно пополнен пользователем с telegram_id {message.from_user.id} на сумму {message.successful_payment.total_amount / 100}")
+
     show_main_menu(message)
 
 def show_main_menu(message):
@@ -81,7 +85,7 @@ def handle_reply(message):
             date = datetime.strptime(message.text, '%Y-%m-%d')
             bot.reply_to(message, f'Ви ввели вірний формат дати: {date}')
             bot.reply_to(message, f'Йде перевірка')
-            bot.reply_to(message, f'Вы получите отчёт как только база данных будет готова')
+            bot.reply_to(message, f'Запит оператору щоб проаналізувати день {date} був надісланий. Чекайте на звіт в Telegram')
             show_main_menu(message)
 
         except ValueError:
@@ -98,6 +102,9 @@ def handle_reply(message):
             if (res == 'success'):
                 markup = types.ForceReply(selective=False)
                 bot.send_message(message.from_user.id, f'Ви успішно підписані на регулярний звіт. Очікуйте наступного звіту', reply_markup=markup)
+                logging.info(
+                    f"{datetime.now():%Y-%m-%d %H:%M:%S} Пользователь {message.from_user.id}  подписался на заведение {name}")
+
             else:
                 markup = types.ForceReply(selective=False)
                 bot.send_message(message.from_user.id, res, reply_markup=markup)
@@ -172,10 +179,10 @@ def get_text_messages(message):
         markup = types.ForceReply(selective=False)
         bot.send_message(message.from_user.id, est_name_and_password_for_subsc, reply_markup=markup)
 
-    elif message.text == 'Отримати інформацію про заклад':
+    elif message.text == 'Написати до сервісу':
         markup = types.ForceReply(selective=False)
-        bot.send_message(message.from_user.id, "Введине название заведения и пароль",
-                         reply_markup=markup)
+        bot.send_message(message.from_user.id, "Щоб звернутися до сервісу будь ласка напишить https://t.me/OkoAisystem",
+                         parse_mode='Markdown')
 
     elif message.text == "Поповнити рахунок":
         markup = types.ForceReply(selective=False)
