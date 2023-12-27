@@ -172,15 +172,16 @@ def get_text_messages(message):
                          parse_mode='Markdown')
 
     elif message.text == 'Отримати звіт за дату':
-        markup = types.ForceReply(selective=False)
-        bot.send_message(message.from_user.id, report_for_date, reply_markup=markup)
+        #markup = types.ForceReply(selective=False)
+        #bot.send_message(message.from_user.id, report_for_date, reply_markup=markup)
+        bot.send_message(message.from_user.id, "Автоматичний запит буде додано піздніше. Зверніться будь-ласка до сервісу",
+                         parse_mode='Markdown')
 
     elif message.text == 'Підписатись на щоденний звіт':
         markup = types.ForceReply(selective=False)
         bot.send_message(message.from_user.id, est_name_and_password_for_subsc, reply_markup=markup)
 
     elif message.text == 'Написати до сервісу':
-        markup = types.ForceReply(selective=False)
         bot.send_message(message.from_user.id, "Щоб звернутися до сервісу будь ласка напишить https://t.me/OkoAisystem",
                          parse_mode='Markdown')
 
