@@ -9,6 +9,7 @@ from bot import send_bot_message
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import logging
+logging.getLogger("urllib3").setLevel(logging.CRITICAL)
 logging.basicConfig(filename='db.log', filemode='w', level=logging.DEBUG)
 
 days_untin_final = "У вас %s днів до закінчення дії підписки\n"
