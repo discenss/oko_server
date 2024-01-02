@@ -5,6 +5,7 @@ from oko_db.db import DB
 from telebot.types import LabeledPrice, ShippingOption
 import time
 import logging
+logging.getLogger("urllib3").setLevel(logging.CRITICAL)
 logging.basicConfig(filename='bot.log', filemode='w', level=logging.DEBUG)
 
 def read_bot_keys(file_path):
