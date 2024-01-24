@@ -3,6 +3,8 @@ from telebot import types
 from datetime import datetime
 from oko_db.db import DB
 from telebot.types import LabeledPrice, ShippingOption
+from telebot.types import InputFile
+
 import time
 import logging
 logging.getLogger("urllib3").setLevel(logging.CRITICAL)
@@ -19,7 +21,13 @@ def read_bot_keys(file_path):
 file_path = 'file.txt'  # Укажите путь к вашему файлу
 bot_id, payment_token = read_bot_keys(file_path)
 bot = telebot.TeleBot(bot_id)
+start_message = """👋 Привіт! Я твій бот для роботы с відео спостереженням.
+                /start - почати с початку
+                Якщо ви тільки розпочали роботу с ботом то Вам необхідно мати 'Назву закладу' та 'Пароль'. Цю інформацію може отримати у власника закладу.
+                Наступний крок - підписатися не щоденний звіт
+                /menu - показати меню """
 
+license_agree = """ """
 report_for_date = 'Введіть дату у форматі РРРР-ММ-ДД (Наприклад 1991-08-24)'
 report_for_date_or_exit = "Ведіть дату у форматі РРРР-ММ-ДД (Наприклад 1991-08-24) или /menu для виходу"
 est_name_and_password_for_subsc = "Введіть назву_закладу та пароль через пробіл. Наприклад:\n MyBar MyPassword"
@@ -57,13 +65,17 @@ def show_main_menu(message):
 def start(message):
 
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    btn1 = types.KeyboardButton("👋 Почати")
+    btn1 = types.KeyboardButton("👋Погодитись та Почати")
     markup.add(btn1)
-    bot.send_message(message.from_user.id, "👋 Привіт! Я твій бот для роботы с відео спостереженням. \n"
-                                           "/start - почати с початку\n"
-                                           "Якщо ви тільки розпочали роботу с ботом то Вам необхідно мати 'Назву закладу' та 'Пароль'. Цю інформацію може отримати у власника закладу.\n "
-                                           "Наступний крок - підписатися не щоденний звіт\n"
-                                           "/menu - показати меню ", reply_markup=markup)
+    bot.send_message(message.from_user.id, start_message, reply_markup=markup)
+    doc = InputFile('ПОЛІТИКА КОНФІДЕНЦІЙНОСТІ.docx')
+    bot.send_document(message.from_user.id, doc)
+
+    doc = InputFile('ПУБЛІЧНА ОФЕРТА.docx')
+    bot.send_document(message.from_user.id, doc, reply_markup=markup)
+
+
+#bot.send_document(message.from_user.id, 'README.md', reply_markup=markup)
 
 @bot.message_handler(commands=['menu'])
 def start(message):
@@ -143,7 +155,7 @@ def handle_reply(message):
 @bot.message_handler(content_types=['text'])
 def get_text_messages(message):
 
-    if message.text == '👋 Почати':
+    if message.text == '👋Погодитись та Почати':
         markup = types.ForceReply(selective=False)
         bot.send_message(message.from_user.id, est_name_and_password_for_subsc, reply_markup=markup)
     elif message.text == 'Назад в меню':
