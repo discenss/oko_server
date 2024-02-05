@@ -74,6 +74,9 @@ def start(message):
     doc = InputFile('ПУБЛІЧНА ОФЕРТА.docx')
     bot.send_document(message.from_user.id, doc, reply_markup=markup)
 
+    doc = InputFile('ЗГОДА НА ОБРОБКУ ПЕРСОНАЛЬНИХ ДАННИХ.docx')
+    bot.send_document(message.from_user.id, doc, reply_markup=markup)
+
 
 #bot.send_document(message.from_user.id, 'README.md', reply_markup=markup)
 
