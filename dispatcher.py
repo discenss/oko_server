@@ -34,7 +34,7 @@ def run_processing():
     rows = db.cur.fetchall()
     list_not_resp = []
     for i in range(len(rows)):
-        id, name, adress, passw, license_id, owner_id, report_type, path, date = rows[i]
+        id, name, adress, passw, license_id, owner_id, report_type, path, date, extra = rows[i]
         if (date - datetime.now().date()).days < 0:
             logging.error(
                 f" Subscription expired for {name}")
