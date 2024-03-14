@@ -126,7 +126,7 @@ def license_check():
     rows = db.get_full_est_list()
     #rows = db.cur.fetchall()
     for i in range(len(rows)):
-        id, name, adress, passw, license_id, owner_id, report_type, path, date = rows[i]
+        id, name, adress, passw, license_id, owner_id, report_type, path, date, extra = rows[i]
         days_difference = (date - datetime.now().date()).days
         lic_name, lic_price = db.get_license_name_and_price(license_id)
         tg_id = db.get_telegram_id(owner_id)
