@@ -9,13 +9,18 @@ from bot import send_bot_message
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import logging
-logging.getLogger("urllib3").setLevel(logging.CRITICAL)
-logging.basicConfig(filename='db.log', filemode='w', level=logging.DEBUG)
+
+logfile = 'db.log'
+if os.path.exists(logfile):
+    os.remove(logfile)
+logging.getLogger("urllib3").setLevel(logging.INFO)
+logging.basicConfig(filename=logfile, filemode='w', level=logging.INFO)
 
 days_untin_final = "У вас %s днів до закінчення дії підписки\n"
 users_money = "У вас на рахунку %s\n"
 license_name_and_price = "Ви використовуете для закладу %s підписку %s. Вам необхідно поповнити рахунок на %s"
 paying_for_license = "З вашого рахунку знято %sгрн за використання підписки %s для закладу %s. Залишок на рахунку %s"
+
 
 def get_date_from_file(source_path):
     match = re.search(r'(\d{4}-\d{2}-\d{2})', source_path)
@@ -26,9 +31,11 @@ def get_date_from_file(source_path):
     else:
         return False
 
-def run_processing():
 
+def run_processing():
     print(" Processing started")
+    logging.error(
+        f"{datetime.now():%Y-%m-%d %H:%M:%S} Processing started")
     db = DB()
     db.cur.execute("SELECT * FROM establishments")
     rows = db.cur.fetchall()
@@ -39,11 +46,11 @@ def run_processing():
             logging.error(
                 f" Subscription expired for {name}")
             continue
-        if path!= None and os.path.isdir(path):
+        if path != None and os.path.isdir(path):
 
             for file in os.listdir(path):
                 if file.endswith('.mp4') and get_date_from_file(file):
-                        #and os.path.isfile(os.path.join(path, file)[:-3]+'json'):
+                    # and os.path.isfile(os.path.join(path, file)[:-3]+'json'):
                     date_string = get_date_from_file(file)
                     if date_string:
                         days_difference = (datetime.now().date() - date_string).days
@@ -94,7 +101,7 @@ def run_processing():
 
                                     command = f"--source={os.path.join(path, file)} --est={name} --id={id_server} --device={device}"
                                     print(command)
-                                    logging.info(
+                                    logging.error(
                                         f"{datetime.now():%Y-%m-%d %H:%M:%S} STARTED {command}")
                                     conn.send(command)
                                     conn.send('close')
@@ -121,36 +128,40 @@ def run_processing():
     else:
         return None
 
+
 def license_check():
     db = DB()
     rows = db.get_full_est_list()
-    #rows = db.cur.fetchall()
     for i in range(len(rows)):
         id, name, adress, passw, license_id, owner_id, report_type, path, date, extra = rows[i]
         days_difference = (date - datetime.now().date()).days
         lic_name, lic_price = db.get_license_name_and_price(license_id)
         tg_id = db.get_telegram_id(owner_id)
         tg_user_money = db.get_money_for_tg_user(tg_id)
-        if ( days_difference < 1 and days_difference >= 0 and lic_name == "Test"):
+        if (days_difference < 1 and days_difference >= 0 and lic_name == "Test"):
             result_string = days_untin_final % (days_difference)
             if (tg_user_money == 0):
-                send_bot_message(result_string + " У вас на рахунку 0 грн. Поповніть рахунок та зверніться до оператора щоб узгодити тип підписки. ", tg_id)
-                logging.info(f"{datetime.now():%Y-%m-%d %H:%M:%S} - Закончен тестовый период для заведения {name} и telegram id {tg_id}")
+                send_bot_message(
+                    result_string + " У вас на рахунку 0 грн. Поповніть рахунок та зверніться до оператора щоб узгодити тип підписки. ",
+                    tg_id)
+                logging.info(
+                    f"{datetime.now():%Y-%m-%d %H:%M:%S} - Закончен тестовый период для заведения {name} и telegram id {tg_id}")
 
 
-        elif ( days_difference < 7 and days_difference > 0 and lic_name !="Test"):
+        elif (days_difference < 7 and days_difference > 0 and lic_name != "Test"):
             money = db.get_money_for_tg_user(tg_id)
             if (money < lic_price):
                 result_string = days_untin_final % (days_difference)
-                result_string = result_string + users_money % (money) + license_name_and_price %(name, lic_name, lic_price - money)
+                result_string = result_string + users_money % (money) + license_name_and_price % (
+                name, lic_name, lic_price - money)
                 send_bot_message(result_string, tg_id)
                 logging.info(
                     f"{datetime.now():%Y-%m-%d %H:%M:%S} - Заканчивается подписка для заведения {name} и telegram id {tg_id}. Сумма {lic_price}")
 
         elif (days_difference <= 0 and lic_name != "Test"):
-            if (tg_user_money >= lic_price ):
+            if (tg_user_money >= lic_price):
                 db.addmomey_for_tg_user(tg_id, lic_price * -1)
-                result_string = paying_for_license %(lic_price, lic_name, name, db.get_money_for_tg_user(tg_id))
+                result_string = paying_for_license % (lic_price, lic_name, name, db.get_money_for_tg_user(tg_id))
                 today = datetime.today()
                 one_month_later = today + relativedelta(months=1)
                 db.db_set_date_license_expired(one_month_later.date(), id)
@@ -161,8 +172,7 @@ def license_check():
                 logging.info(
                     f"{datetime.now():%Y-%m-%d %H:%M:%S} - Недостаточно денег для оплаты подписки для заведения '{name}' и telegram id '{tg_id}'. Сумма '{lic_price}'")
 
-
-        #elif (days_difference <= 0 and lic_name == "Test"):
+        # elif (days_difference <= 0 and lic_name == "Test"):
         #    lic_name, lic_price = db.get_license_name_and_price(1)
         #    if (tg_user_money >= lic_price ):
         #        db.addmomey_for_tg_user(tg_id, lic_price * -1)
@@ -173,18 +183,75 @@ def license_check():
         #        send_bot_message(result_string, tg_id)
 
 
+def license_check_2():
+    db = DB()
+    for user_id in db.get_owner_id_list():
+        rows = db.get_full_est_list()
+        ests = {}
+        user_message = 'Стан підписок для закладів:\n'
+        owner_tg_id = db.get_telegram_id(user_id)
+        owner_tg_user_money = db.get_money_for_tg_user(owner_tg_id)
+        if owner_tg_user_money is None: owner_tg_user_money = 0
+        for i in range(len(rows)):
+            id, name, adress, passw, license_id, owner_id, report_type, path, date, extra = rows[i]
+            days_difference = (date - datetime.now().date()).days
+            lic_name, lic_price = db.get_license_name_and_price(license_id)
+            tg_id = db.get_telegram_id(owner_id)
+            tg_user_money = db.get_money_for_tg_user(tg_id)
+
+            if tg_user_money is None: tg_user_money = 0
+            if user_id == owner_id:
+                if (days_difference < 7 and days_difference > 0 and lic_name != "Test"):
+                    money = db.get_money_for_tg_user(tg_id)
+                    ests[name] = [days_difference, lic_price]
+
+                elif (days_difference <= 0 and lic_name != "Test"):
+                    if (tg_user_money >= lic_price):
+                        db.addmomey_for_tg_user(tg_id, lic_price * -1)
+                        result_string = paying_for_license % (
+                        lic_price, lic_name, name, db.get_money_for_tg_user(tg_id))
+                        today = datetime.today()
+                        one_month_later = today + relativedelta(months=1)
+                        db.db_set_date_license_expired(one_month_later.date(), id)
+                        send_bot_message(result_string, tg_id)
+                        owner_tg_user_money = db.get_money_for_tg_user(owner_tg_id)
+                        logging.info(
+                            f"{datetime.now():%Y-%m-%d %H:%M:%S} - Снята оплата для заведения {name} и telegram id {tg_id}. Сумма {lic_price}")
+                    else:
+                        ests[name] = [days_difference, lic_price]
+                        logging.info(
+                            f"{datetime.now():%Y-%m-%d %H:%M:%S} - Недостаточно денег для оплаты подписки для заведения '{name}' и telegram id '{tg_id}'. Сумма '{lic_price}'")
+                        send_bot_message(
+                            f"Недостатньо коштів для сплати підписки для закладу '{name}'. Сума '{lic_price}'",
+                            owner_tg_id)
+        sum = 0
+        for n, v in ests.items():
+            sum += v[1]
+            if v[0] >= 0:
+                user_message += "Заклад: %s , днів залишилося %s, Сума сплати: %s\n" % (n, str(v[0]), str(v[1]))
+            else:
+                user_message += "Заклад: %s , підписка не активнва %s днів, Сума сплати: %s\n" % (
+                n, str(abs(v[0])), str(v[1]))
+
+        if owner_tg_user_money < sum:
+            user_message += "У Вас на рахунку %s грн\nПотрібно поповнити на %s\n" % (
+            str(owner_tg_user_money), str(sum - owner_tg_user_money))
+            send_bot_message(user_message, owner_tg_id)
+
+
 # Планирование задачи на выполнение каждый день в определенное время
-schedule.every().day.at("03:00").do(run_processing)
-schedule.every().day.at("03:00").do(license_check)
+schedule.every().day.at("07:00").do(license_check_2)
+schedule.every().day.at("05:30").do(run_processing)
+
 
 def main():
-    #license_check()
-    #run_processing()
+    # license_check_2()
+    # license_check()
+    run_processing()
     while True:
         schedule.run_pending()
         time.sleep(1)
 
 
 if __name__ == '__main__':
-    #bot.polling(none_stop=True, interval=0)  # обязательная для работы бота часть
     main()
